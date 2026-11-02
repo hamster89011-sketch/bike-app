@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울 따릉이 대여소 현황</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --danger-bg: #fef2f2;
+            --danger-text: #ef4444;
+            --danger-border: #fca5a5;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 20px 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            margin-bottom: 24px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .data-source-badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-live {
+            background-color: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .badge-sample {
+            background-color: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #ffedd5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+
+        .refresh-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 자전거 수가 0대인 곳 빨간색 스타일 강화를 위한 처리 */
+        .card.zero-bikes {
+            background-color: var(--danger-bg);
+            border-color: var(--danger-border);
+        }
+
+        .card-header {
+            margin-bottom: 12px;
+        }
+
+        .station-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            word-break: keep-all;
+        }
+
+        .card.zero-bikes .station-name {
+            color: #991b1b;
+        }
+
+        .bike-info {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .bike-count {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-hover);
+        }
+
+        .card.zero-bikes .bike-count {
+            color: var(--danger-text);
+        }
+
+        .bike-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .card.zero-bikes .bike-label {
+            color: #991b1b;
+        }
+
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.025);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .card.zero-bikes .meta-info {
+            background: rgba(239, 68, 68, 0.08);
+            color: #7f1d1d;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 로딩 스피너 */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="header-top">
+            <h1>
+                🚲 서울 따릉이 대여소 현황
+                <span id="dataSourceBadge" class="data-source-badge badge-live">실시간 데이터</span>
+            </h1>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="대여소 이름을 검색하세요..." oninput="handleSearch()">
+            </div>
+            <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">
+                <span id="btnIcon">🔄</span> 새로고침
+            </button>
+        </div>
+
+        <div class="status-bar">
+            <span>총 <strong id="totalCount">0</strong>개 대여소</span>
+            <span>마지막 갱신 시각: <strong id="lastUpdated">-</strong></span>
+        </div>
+    </header>
+
+    <main id="stationGrid" class="grid-container">
+        <!-- 대여소 카드가 동적으로 여기에 삽입됩니다 -->
+    </main>
+</div>
+
+<script>
+    // API 불러오기 실패 시 사용하는 샘플 데이터
+    const SAMPLE_DATA = [
+        {
+            "rackTotCnt": "15",
+            "stationName": "102. 망원역 1번출구 앞",
+            "parkingBikeTotCnt": "11",
+            "shared": "73",
+            "stationLatitude": "37.55564880",
+            "stationLongitude": "126.91062927",
+            "stationId": "ST-4"
+        },
+        {
+            "rackTotCnt": "14",
+            "stationName": "103. 망원역 2번출구 앞",
+            "parkingBikeTotCnt": "12",
+            "shared": "86",
+            "stationLatitude": "37.55495071",
+            "stationLongitude": "126.91083527",
+            "stationId": "ST-5"
+        },
+        {
+            "rackTotCnt": "13",
+            "stationName": "104. 합정역 1번출구 앞",
+            "parkingBikeTotCnt": "16",
+            "shared": "123",
+            "stationLatitude": "37.55073929",
+            "stationLongitude": "126.91508484",
+            "stationId": "ST-6"
+        },
+        {
+            "rackTotCnt": "5",
+            "stationName": "105. 합정역 5번출구 앞",
+            "parkingBikeTotCnt": "0",
+            "shared": "0",
+            "stationLatitude": "37.55000687",
+            "stationLongitude": "126.91482544",
+            "stationId": "ST-7"
+        },
+        {
+            "rackTotCnt": "12",
+            "stationName": "106. 합정역 7번출구 앞",
+            "parkingBikeTotCnt": "1",
+            "shared": "8",
+            "stationLatitude": "37.54864502",
+            "stationLongitude": "126.91282654",
+            "stationId": "ST-8"
+        }
+    ];
+
+    let currentStations = [];
+
+    // 데이터 fetch 및 에러 처리
+    async function fetchData() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        const btnIcon = document.getElementById('btnIcon');
+        const badge = document.getElementById('dataSourceBadge');
+
+        // 버튼 로딩 애니메이션
+        refreshBtn.disabled = true;
+        btnIcon.innerHTML = '<span class="spinner"></span>';
+
+        try {
+            const response = await fetch('/api/bike');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            // 응답 구조 rentBikeStatus.row 검증
+            if (data && data.rentBikeStatus && Array.isArray(data.rentBikeStatus.row)) {
+                currentStations = parseStationData(data.rentBikeStatus.row);
+                badge.textContent = '실시간 데이터';
+                badge.className = 'data-source-badge badge-live';
+            } else {
+                throw new Error('응답 데이터 형식이 맞지 않습니다.');
+            }
+        } catch (error) {
+            console.warn('API 불러오기 실패. 샘플 데이터를 사용합니다:', error);
+            // 실패 시 제공된 샘플 데이터 사용
+            currentStations = parseStationData(SAMPLE_DATA);
+            badge.textContent = '샘플 데이터';
+            badge.className = 'data-source-badge badge-sample';
+        } finally {
+            // 버튼 상태 원복
+            refreshBtn.disabled = false;
+            btnIcon.textContent = '🔄';
+
+            // 갱신 시각 업데이트
+            updateLastUpdatedTime();
+
+            // 렌더링
+            renderStations();
+        }
+    }
+
+    // 데이터 변환 (문자열 -> 숫자 처리)
+    function parseStationData(rawData) {
+        return rawData.map(item => ({
+            stationName: item.stationName || '알 수 없는 대여소',
+            parkingBikeTotCnt: Number(item.parkingBikeTotCnt) || 0,
+            rackTotCnt: Number(item.rackTotCnt) || 0,
+            shared: Number(item.shared) || 0
+        }));
+    }
+
+    // 마지막 갱신 시간 계산 및 표시
+    function updateLastUpdatedTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('lastUpdated').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    // 대여소 이름 검색 이벤트 핸들러
+    function handleSearch() {
+        renderStations();
+    }
+
+    // 대여소 목록 화면 렌더링
+    function renderStations() {
+        const grid = document.getElementById('stationGrid');
+        const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
+        
+        // 검색어 필터링
+        const filteredStations = currentStations.filter(station => 
+            station.stationName.toLowerCase().includes(searchInput)
+        );
+
+        // 표시할 대여소 수 업데이트
+        document.getElementById('totalCount').textContent = filteredStations.length;
+
+        // 검색 결과가 없는 경우 처리
+        if (filteredStations.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <h3>검색 결과가 없습니다.</h3>
+                    <p style="margin-top: 8px;">다른 대여소 이름으로 검색해 보세요.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 카드 생성 (자전거 0대일 경우 zero-bikes 클래스 추가)
+        grid.innerHTML = filteredStations.map(station => {
+            const isZero = station.parkingBikeTotCnt === 0;
+            const zeroClass = isZero ? 'zero-bikes' : '';
+
+            return `
+                <div class="card ${zeroClass}">
+                    <div class="card-header">
+                        <div class="station-name">${escapeHtml(station.stationName)}</div>
+                    </div>
+                    <div class="bike-info">
+                        <span class="bike-count">${station.parkingBikeTotCnt}</span>
+                        <span class="bike-label">대 이용 가능</span>
+                    </div>
+                    <div class="meta-info">
+                        <span>거치대 수: ${station.rackTotCnt}개</span>
+                        <span>거치율: ${station.shared}%</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // HTML 이스케이프 함수
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // 초기 화면 로드 시 데이터 로딩
+    window.onload = function() {
+        fetchData();
+    };
+</script>
+</body>
+</html>
